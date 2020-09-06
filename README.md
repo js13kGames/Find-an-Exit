@@ -1,2 +1,2 @@
-# hide-and-do-not-sneeze
+# Hide and Do Not Sneeze
 First attempt at participating in js13kgames
