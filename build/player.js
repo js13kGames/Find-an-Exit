@@ -1,26 +1,37 @@
-import Common from './common.js';
-let { instance: { canvas, } } = Common;
+import { MAX_JUMP_VELOCITY, TILE_SIZE } from './constants.js';
+import { keyPressed } from './controller.js';
+import BoundingBoxCorners from './bounding_box_corners.js';
 class Player {
     constructor(startingPoint) {
         this.dx = 0;
         this.dy = 0;
-        this.#height = 20;
+        this.#storedVelocity = 0;
+        this.#height = TILE_SIZE;
         this.#isJumped = false;
         this.isOnGround = true;
         this.#health = 3;
-        this.#jumpAcceleration = -3;
+        this.#jumpAcceleration = -1;
         this.#moveAcceleration = 0.3;
+        this.#boundingBox = [
+            [0, 0],
+            [0, 0],
+            [0, 0],
+            [0, 0],
+        ];
         let { x, y } = startingPoint;
         this.#x = x;
-        this.#y = y - this.#height;
+        this.#y = y;
+        this.adjustBoundingBox();
     }
     #x;
     #y;
+    #storedVelocity;
     #height;
     #isJumped;
     #health;
     #jumpAcceleration;
     #moveAcceleration;
+    #boundingBox;
     get height() {
         return this.#height;
     }
@@ -39,6 +50,9 @@ class Player {
     get isJumped() {
         return this.#isJumped;
     }
+    get boundingBox() {
+        return this.#boundingBox;
+    }
     move(action) {
         switch (action) {
             case "right": {
@@ -50,16 +64,28 @@ class Player {
                 break;
             }
             default: {
-                this.dx *= 0.6;
+                this.dx *= 0.4;
             }
         }
     }
-    startJump() {
-        this.dy += this.#jumpAcceleration;
-        this.dy = Math.max(this.dy, -12);
-    }
     jump() {
-        this.isOnGround = false;
+        if (this.isOnGround) {
+            if (keyPressed[0 /* Jump */]) {
+                this.#storedVelocity += this.#jumpAcceleration;
+                this.#storedVelocity = Math.max(this.#storedVelocity, -MAX_JUMP_VELOCITY);
+            }
+            else {
+                this.dy = this.#storedVelocity;
+                this.isOnGround = false;
+                this.#storedVelocity = 0;
+            }
+        }
+    }
+    adjustBoundingBox() {
+        this.#boundingBox[BoundingBoxCorners.upLeft] = [this.#x, this.#y];
+        this.#boundingBox[BoundingBoxCorners.upRight] = [this.#x + this.#height, this.#y];
+        this.#boundingBox[BoundingBoxCorners.downRight] = [this.#x + this.#height, this.#y + this.#height];
+        this.#boundingBox[BoundingBoxCorners.downLeft] = [this.#x, this.#y + this.#height];
     }
     duck() {
         //TODO: change sprite;

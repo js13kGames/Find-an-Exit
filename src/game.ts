@@ -1,18 +1,17 @@
-import Common from './common.js';
-import Player from './player.js';
-import Controller from './controller.js';
-import Keys from './keys.js';
-import { GRAVITY } from './constants.js';
-import Render from './render.js';
-
-let {
+import {
     canvas,
-    ctx,
     clr,
-    resize,
-} = Common.instance;
+    ctx,
+    resize
+} from './common.js';
+import Player from './player.js';
+import { keyPressed } from './controller.js';
+import Keys from './keys.js';
+import { GRAVITY, TILE_SIZE } from './constants.js';
+import Render from './render.js';
+import levelOne from './levels/level_one.js';
 
-const playerStartingPoint: {x: number, y: number} = {x: 16 * 30, y: 2 * 30};
+const playerStartingPoint: { x: number, y: number } = { x: levelOne.start[0] * TILE_SIZE, y: levelOne.start[1] * TILE_SIZE };
 let player = new Player(playerStartingPoint);
 
 let size = document.getElementById('size');
@@ -22,28 +21,22 @@ function update(timeStep: number = 1) {
 
     // Add gravity to player
     player.dy += GRAVITY;
+    player.jump();
+    player.y += player.dy * timeStep;
 
-    if (player.isOnGround && controller.keyPressed[Keys.Jump]) {
-        player.startJump();
-    } else {
-        player.jump();
-        player.y += player.dy * timeStep;
-    }
-    
-    if (controller.keyPressed[Keys.Right] && player.dx < 10) {
+    if (keyPressed[Keys.Right] && player.dx < 10) {
         player.move('right');
-    } else if (controller.keyPressed[Keys.Left] && player.dx > -10) {
+    } else if (keyPressed[Keys.Left] && player.dx > -10) {
         player.move('left');
-    } 
+    }
     else {
         player.move('');
     }
-
     player.x += player.dx * timeStep;
 
-    // Collision with ground detect
-    if (player.y > canvas.height - player.height) {
-        player.y = canvas.height - player.height;
+    let collision = levelOne.isCollision(player)
+    if (collision.type === 2 && player.dy > 0) {
+        player.y = collision.y - player.height;
         player.dy = 0;
         player.isOnGround = true;
     }
@@ -52,28 +45,36 @@ function update(timeStep: number = 1) {
         if (player.x <= 0) {
             player.x = 0
         }
-        if (player.x >= canvas.width - player.height){
+        if (player.x >= canvas.width - player.height) {
             player.x = canvas.width - player.height;
         }
         player.dx = -player.dx;
     }
 
+    player.adjustBoundingBox();
     return lastPlayerState;
 }
 
 function render(lastPlayerState: Player | undefined = undefined, interpolation: number = 1) {
     clr();
     // resize();
-    let { start } = Render.levelOne();
-    ctx!.fillRect(lastPlayerState?.x || 0 + (player.x - (lastPlayerState?.x || 0)) * interpolation, lastPlayerState?.y || 0 + (player.y - (lastPlayerState?.y || 0)) * interpolation, player.height, player.height);
-    size!.innerHTML = `width: ${canvas.width} height: ${canvas.height} dx: ${player.dx.toFixed(1)} dy: ${player.dy.toFixed(1)}`;
+    Render.renderLevelOne();
+    if (ctx !== null) {
+        ctx.fillStyle = 'black';
+        ctx.fillRect(lastPlayerState?.x || 0 + (player.x - (lastPlayerState?.x || 0)) * interpolation, lastPlayerState?.y || 0 + (player.y - (lastPlayerState?.y || 0)) * interpolation, player.height, player.height);
+
+        ctx.strokeStyle = '#FFA500';
+        ctx.strokeRect(player.boundingBox[0][0], player.boundingBox[0][1], player.height, player.height);
+    }
+
+    size!.innerHTML = `collision: ${levelOne.isCollision(player)} height: ${canvas.height} dx: ${player.dx.toFixed(1)} dy: ${player.dy.toFixed(1)}`;
 }
 
-const fps = 120;
+const fps = 60;
 const timeStep = 1000 / fps;
 let currentTime = performance.now();
 let timeAccumulator = 0.0;
-let currentTimeState = 0; 
+let currentTimeState = 0;
 let previousTimeState = 0;
 
 function loop(timestamp: number) {
@@ -103,6 +104,4 @@ function loop(timestamp: number) {
     requestAnimationFrame(loop);
 }
 
-Controller.init();
-let { instance: controller } = Controller;
 requestAnimationFrame(loop);

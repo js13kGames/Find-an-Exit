@@ -1,30 +1,19 @@
-class Common {
-    ctx: CanvasRenderingContext2D | null | undefined;
-    static _instance: Common = new Common();
+import { 
+    TILE_SIZE, 
+    CANVAS_HEIGHT_IN_TILES, 
+    CANVAS_WIDTH_IN_TILES 
+} from './constants.js';
 
-    private constructor() {
-        let canvas = document.getElementById('canvas') as HTMLCanvasElement;
-        canvas.height = 800;
-        canvas.width = 800;
-        this.ctx = canvas.getContext('2d');
-    }
+export const canvas = document.getElementById('canvas') as HTMLCanvasElement;
+canvas.height = TILE_SIZE * CANVAS_HEIGHT_IN_TILES;
+canvas.width = TILE_SIZE * CANVAS_WIDTH_IN_TILES;
 
-    static get instance() {
-        return this._instance;
-    }
+export const ctx = canvas.getContext('2d');
 
-    get canvas() {
-        return Common._instance.ctx!.canvas;
-    }
-
-    clr() {
-        Common._instance.ctx?.clearRect(0, 0, Common._instance.canvas!.width, Common._instance.canvas!.height);
-    }
-
-    resize() {
-        Common._instance.ctx!.canvas.height = window.innerHeight / 2;
-        Common._instance.ctx!.canvas.width = window.innerWidth / 2;
-    }
+export const clr = () => {
+    ctx?.clearRect(0, 0, canvas!.width, canvas!.height);
 }
-
-export default Common;
+export const resize = () => {
+    ctx!.canvas.height = window.innerHeight / 2;
+    ctx!.canvas.width = window.innerWidth / 2;
+}
