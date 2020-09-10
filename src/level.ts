@@ -4,20 +4,6 @@ import TileType from './tile_type.js';
 import Point from './point.js';
 import BoundingBoxCorners from './bounding_box_corners.js';
 
-enum COLLISION_DIRECTION {
-    Top,
-    Right,
-    Down,
-    Left,
-    None,
-}
-
-type Collision = {
-    type: COLLISION_DIRECTION,
-    x : number,
-    y : number,
-}
-
 class Level {
     #matrix: number[][];
     #start: [number, number];
@@ -41,27 +27,36 @@ class Level {
         return this.#matrix;
     }
 
-    isCollision(player : Player) : Collision {
+    handleVerticalCollision(player: Player) : void {
         const {
-            x,
-            y,
             boundingBox
         } = player;
 
         const tilesEntered = this.getTilesEntered(player);
 
-        if (tilesEntered[BoundingBoxCorners.downLeft] + tilesEntered[BoundingBoxCorners.downRight] >= 1) {
-            return {
-                type: COLLISION_DIRECTION.Down,
-                x: -1,
-                y: ~~(boundingBox[BoundingBoxCorners.downLeft][1] / TILE_SIZE) * TILE_SIZE,
-            }
+        if (tilesEntered[BoundingBoxCorners.downLeft] + tilesEntered[BoundingBoxCorners.downRight] >= 1 && player.dy > 0) {
+            player.y = ~~(boundingBox[BoundingBoxCorners.upLeft][1] / TILE_SIZE) * TILE_SIZE;
+            player.dy = 0;
+            player.isOnGround = true;
+        } else if (tilesEntered[BoundingBoxCorners.upLeft] + tilesEntered[BoundingBoxCorners.upRight] >= 1) {
+            player.y = ~~(boundingBox[BoundingBoxCorners.downLeft][1] / TILE_SIZE) * TILE_SIZE;
+            player.dy = -player.dy;
         }
+    }
 
-        return {
-            type: COLLISION_DIRECTION.None,
-            x: -1,
-            y: -1,
+    handleHorizontalCollision(player : Player) : void {
+        const {
+            boundingBox
+        } = player;
+
+        const tilesEntered = this.getTilesEntered(player);
+
+        if (tilesEntered[BoundingBoxCorners.upLeft] === 1 && tilesEntered[BoundingBoxCorners.upRight] === 0) {
+            player.x = ~~(boundingBox[BoundingBoxCorners.upRight][0] / TILE_SIZE) * TILE_SIZE;
+            player.dx = -player.dx;
+        } else if (tilesEntered[BoundingBoxCorners.upRight] === 1 && tilesEntered[BoundingBoxCorners.upLeft] === 0) {
+            player.x = ~~(boundingBox[BoundingBoxCorners.upLeft][0] / TILE_SIZE) * TILE_SIZE;
+            player.dx = -player.dx;
         }
     }
 

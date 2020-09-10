@@ -1,6 +1,5 @@
-import { canvas, clr, ctx } from './common.js';
+import { clr, ctx } from './common.js';
 import Player from './player.js';
-import { keyPressed } from './controller.js';
 import { GRAVITY, TILE_SIZE } from './constants.js';
 import Render from './render.js';
 import levelOne from './levels/level_one.js';
@@ -11,33 +10,10 @@ function update(timeStep = 1) {
     let lastPlayerState = player;
     // Add gravity to player
     player.dy += GRAVITY;
-    player.jump();
-    player.y += player.dy * timeStep;
-    if (keyPressed[3 /* Right */] && player.dx < 10) {
-        player.move('right');
-    }
-    else if (keyPressed[2 /* Left */] && player.dx > -10) {
-        player.move('left');
-    }
-    else {
-        player.move('');
-    }
-    player.x += player.dx * timeStep;
-    let collision = levelOne.isCollision(player);
-    if (collision.type === 2 && player.dy > 0) {
-        player.y = collision.y - player.height;
-        player.dy = 0;
-        player.isOnGround = true;
-    }
-    if (player.x <= 0 || player.x >= canvas.width - player.height) {
-        if (player.x <= 0) {
-            player.x = 0;
-        }
-        if (player.x >= canvas.width - player.height) {
-            player.x = canvas.width - player.height;
-        }
-        player.dx = -player.dx;
-    }
+    levelOne.handleVerticalCollision(player);
+    player.jump(timeStep);
+    levelOne.handleHorizontalCollision(player);
+    player.move(timeStep);
     player.adjustBoundingBox();
     return lastPlayerState;
 }
@@ -51,7 +27,7 @@ function render(lastPlayerState = undefined, interpolation = 1) {
         ctx.strokeStyle = '#FFA500';
         ctx.strokeRect(player.boundingBox[0][0], player.boundingBox[0][1], player.height, player.height);
     }
-    size.innerHTML = `collision: ${levelOne.isCollision(player)} height: ${canvas.height} dx: ${player.dx.toFixed(1)} dy: ${player.dy.toFixed(1)}`;
+    size.innerHTML = `dx: ${player.dx.toFixed(1)} dy: ${player.dy.toFixed(1)}`;
 }
 const fps = 60;
 const timeStep = 1000 / fps;

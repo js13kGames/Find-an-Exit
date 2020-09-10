@@ -21,35 +21,11 @@ function update(timeStep: number = 1) {
 
     // Add gravity to player
     player.dy += GRAVITY;
-    player.jump();
-    player.y += player.dy * timeStep;
-
-    if (keyPressed[Keys.Right] && player.dx < 10) {
-        player.move('right');
-    } else if (keyPressed[Keys.Left] && player.dx > -10) {
-        player.move('left');
-    }
-    else {
-        player.move('');
-    }
-    player.x += player.dx * timeStep;
-
-    let collision = levelOne.isCollision(player)
-    if (collision.type === 2 && player.dy > 0) {
-        player.y = collision.y - player.height;
-        player.dy = 0;
-        player.isOnGround = true;
-    }
-
-    if (player.x <= 0 || player.x >= canvas.width - player.height) {
-        if (player.x <= 0) {
-            player.x = 0
-        }
-        if (player.x >= canvas.width - player.height) {
-            player.x = canvas.width - player.height;
-        }
-        player.dx = -player.dx;
-    }
+    levelOne.handleVerticalCollision(player);
+    player.jump(timeStep);
+    
+    levelOne.handleHorizontalCollision(player);
+    player.move(timeStep);
 
     player.adjustBoundingBox();
     return lastPlayerState;
@@ -67,7 +43,7 @@ function render(lastPlayerState: Player | undefined = undefined, interpolation: 
         ctx.strokeRect(player.boundingBox[0][0], player.boundingBox[0][1], player.height, player.height);
     }
 
-    size!.innerHTML = `collision: ${levelOne.isCollision(player)} height: ${canvas.height} dx: ${player.dx.toFixed(1)} dy: ${player.dy.toFixed(1)}`;
+    size!.innerHTML = `dx: ${player.dx.toFixed(1)} dy: ${player.dy.toFixed(1)}`;
 }
 
 const fps = 60;

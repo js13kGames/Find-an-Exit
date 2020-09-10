@@ -10,7 +10,7 @@ class Player {
         this.#isJumped = false;
         this.isOnGround = true;
         this.#health = 3;
-        this.#jumpAcceleration = -1;
+        this.#jumpAcceleration = -2;
         this.#moveAcceleration = 0.3;
         this.#boundingBox = [
             [0, 0],
@@ -53,33 +53,31 @@ class Player {
     get boundingBox() {
         return this.#boundingBox;
     }
-    move(action) {
-        switch (action) {
-            case "right": {
-                this.dx += this.#moveAcceleration;
-                break;
-            }
-            case "left": {
-                this.dx += -this.#moveAcceleration;
-                break;
-            }
-            default: {
-                this.dx *= 0.4;
-            }
+    move(timeStep) {
+        if (keyPressed[3 /* Right */] && this.dx < 10) {
+            this.dx += this.#moveAcceleration;
         }
+        else if (keyPressed[2 /* Left */] && this.dx > -10) {
+            this.dx += -this.#moveAcceleration;
+        }
+        else {
+            this.dx *= 0.6;
+        }
+        this.x += this.dx * timeStep;
     }
-    jump() {
+    jump(timeStep) {
         if (this.isOnGround) {
             if (keyPressed[0 /* Jump */]) {
                 this.#storedVelocity += this.#jumpAcceleration;
                 this.#storedVelocity = Math.max(this.#storedVelocity, -MAX_JUMP_VELOCITY);
             }
-            else {
+            if (!keyPressed[0 /* Jump */] || this.#storedVelocity === -MAX_JUMP_VELOCITY) {
                 this.dy = this.#storedVelocity;
                 this.isOnGround = false;
                 this.#storedVelocity = 0;
             }
         }
+        this.y += this.dy * timeStep;
     }
     adjustBoundingBox() {
         this.#boundingBox[BoundingBoxCorners.upLeft] = [this.#x, this.#y];

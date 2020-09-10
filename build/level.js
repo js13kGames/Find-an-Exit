@@ -1,13 +1,5 @@
 import { TILE_SIZE } from './constants.js';
 import BoundingBoxCorners from './bounding_box_corners.js';
-var COLLISION_DIRECTION;
-(function (COLLISION_DIRECTION) {
-    COLLISION_DIRECTION[COLLISION_DIRECTION["Top"] = 0] = "Top";
-    COLLISION_DIRECTION[COLLISION_DIRECTION["Right"] = 1] = "Right";
-    COLLISION_DIRECTION[COLLISION_DIRECTION["Down"] = 2] = "Down";
-    COLLISION_DIRECTION[COLLISION_DIRECTION["Left"] = 3] = "Left";
-    COLLISION_DIRECTION[COLLISION_DIRECTION["None"] = 4] = "None";
-})(COLLISION_DIRECTION || (COLLISION_DIRECTION = {}));
 class Level {
     constructor(matrix, start, end) {
         this.#matrix = matrix;
@@ -26,21 +18,30 @@ class Level {
     get matrix() {
         return this.#matrix;
     }
-    isCollision(player) {
-        const { x, y, boundingBox } = player;
+    handleVerticalCollision(player) {
+        const { boundingBox } = player;
         const tilesEntered = this.getTilesEntered(player);
-        if (tilesEntered[BoundingBoxCorners.downLeft] + tilesEntered[BoundingBoxCorners.downRight] >= 1) {
-            return {
-                type: COLLISION_DIRECTION.Down,
-                x: -1,
-                y: ~~(boundingBox[BoundingBoxCorners.downLeft][1] / TILE_SIZE) * TILE_SIZE,
-            };
+        if (tilesEntered[BoundingBoxCorners.downLeft] + tilesEntered[BoundingBoxCorners.downRight] >= 1 && player.dy > 0) {
+            player.y = ~~(boundingBox[BoundingBoxCorners.upLeft][1] / TILE_SIZE) * TILE_SIZE;
+            player.dy = 0;
+            player.isOnGround = true;
         }
-        return {
-            type: COLLISION_DIRECTION.None,
-            x: -1,
-            y: -1,
-        };
+        else if (tilesEntered[BoundingBoxCorners.upLeft] + tilesEntered[BoundingBoxCorners.upRight] >= 1) {
+            player.y = ~~(boundingBox[BoundingBoxCorners.downLeft][1] / TILE_SIZE) * TILE_SIZE;
+            player.dy = -player.dy;
+        }
+    }
+    handleHorizontalCollision(player) {
+        const { boundingBox } = player;
+        const tilesEntered = this.getTilesEntered(player);
+        if (tilesEntered[BoundingBoxCorners.upLeft] === 1 && tilesEntered[BoundingBoxCorners.upRight] === 0) {
+            player.x = ~~(boundingBox[BoundingBoxCorners.upRight][0] / TILE_SIZE) * TILE_SIZE;
+            player.dx = -player.dx;
+        }
+        else if (tilesEntered[BoundingBoxCorners.upRight] === 1 && tilesEntered[BoundingBoxCorners.upLeft] === 0) {
+            player.x = ~~(boundingBox[BoundingBoxCorners.upLeft][0] / TILE_SIZE) * TILE_SIZE;
+            player.dx = -player.dx;
+        }
     }
     getTilesEntered(player) {
         const { boundingBox } = player;
