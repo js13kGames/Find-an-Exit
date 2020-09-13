@@ -11,13 +11,13 @@ class StartScreen {
         ctx?.strokeRect(0, 0, canvas.width, canvas.height);
 
         ctx!.font = '48px monospace';
-        centerText('Exit Not Found', this.#textY);
+        centerText('Find an EXIT', this.#textY);
 
         ctx!.font = '24px monospace';
         centerText('press Enter to begin', this.#textY + 30);
 
         ctx!.font = '18px monospace';
-        centerText('Find the exit before you run our of health', this.#textY + 80);
+        centerText('Find the exit before you run out of health', this.#textY + 80);
     }
 }
 
