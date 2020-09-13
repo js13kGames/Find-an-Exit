@@ -17,3 +17,9 @@ export const resize = () => {
     ctx!.canvas.height = window.innerHeight / 2;
     ctx!.canvas.width = window.innerWidth / 2;
 }
+
+export function centerText(text: string, y: number) {
+    var measurement = ctx?.measureText(text);
+    var x = (canvas.width - measurement!.width) / 2;
+    ctx?.fillText(text, x, y);
+}

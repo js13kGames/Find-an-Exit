@@ -13,14 +13,15 @@ onkeyup = (event) => {
     }
 };
 export const keyMap = new Map([
-    ['KeyA', 2 /* Left */],
-    ['ArrowLeft', 2 /* Left */],
-    ['KeyD', 3 /* Right */],
-    ['ArrowRight', 3 /* Right */],
-    ['KeyW', 0 /* Jump */],
-    ['ArrowUp', 0 /* Jump */],
-    ['Space', 0 /* Jump */],
-    ['KeyS', 1 /* Crouch */],
-    ['ArrowDown', 1 /* Crouch */],
+    ['KeyA', 3 /* Left */],
+    ['ArrowLeft', 3 /* Left */],
+    ['KeyD', 4 /* Right */],
+    ['ArrowRight', 4 /* Right */],
+    ['KeyW', 1 /* Jump */],
+    ['ArrowUp', 1 /* Jump */],
+    ['Space', 1 /* Jump */],
+    ['KeyS', 2 /* Crouch */],
+    ['ArrowDown', 2 /* Crouch */],
+    ['Enter', 0 /* Enter */],
 ]);
 export const keyPressed = [];

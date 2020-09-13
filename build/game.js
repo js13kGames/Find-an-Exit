@@ -1,33 +1,71 @@
-import { clr, ctx } from './common.js';
-import Player from './player.js';
+import { clr, } from './common.js';
 import { GRAVITY, TILE_SIZE } from './constants.js';
-import Render from './render.js';
-import levelOne from './levels/level_one.js';
-const playerStartingPoint = { x: levelOne.start[0] * TILE_SIZE, y: levelOne.start[1] * TILE_SIZE };
-let player = new Player(playerStartingPoint);
-let size = document.getElementById('size');
+import { keyPressed } from './controller.js';
+import Player from './player.js';
+import StartScreen from './start_screen.js';
+import getLevels from './levels.js';
+import WinScreen from './win_screen.js';
+let newLevelStarted = false;
+let gameStarted = false;
+let playerWon = false;
+let currentLevelNumber = 0;
+let player;
+let Levels = getLevels();
+let startScreen = new StartScreen();
+let winScreen = new WinScreen();
 function update(timeStep = 1) {
-    let lastPlayerState = player;
-    // Add gravity to player
-    player.dy += GRAVITY;
-    levelOne.handleVerticalCollision(player);
-    player.jump(timeStep);
-    levelOne.handleHorizontalCollision(player);
-    player.move(timeStep);
-    player.adjustBoundingBox();
-    return lastPlayerState;
-}
-function render(lastPlayerState = undefined, interpolation = 1) {
-    clr();
-    // resize();
-    Render.renderLevelOne();
-    if (ctx !== null) {
-        ctx.fillStyle = 'black';
-        ctx.fillRect(lastPlayerState?.x || 0 + (player.x - (lastPlayerState?.x || 0)) * interpolation, lastPlayerState?.y || 0 + (player.y - (lastPlayerState?.y || 0)) * interpolation, player.height, player.height);
-        ctx.strokeStyle = '#FFA500';
-        ctx.strokeRect(player.boundingBox[0][0], player.boundingBox[0][1], player.height, player.height);
+    if (gameStarted) {
+        if (!newLevelStarted) {
+            const playerStartingPoint = { x: Levels[currentLevelNumber].start[0] * TILE_SIZE, y: Levels[currentLevelNumber].start[1] * TILE_SIZE };
+            player = new Player(playerStartingPoint);
+            newLevelStarted = true;
+            return player;
+        }
+        else {
+            if (player) {
+                let lastPlayerState = player;
+                // Add gravity to player
+                player.dy += GRAVITY;
+                Levels[currentLevelNumber].handleVerticalCollision(player);
+                player.jump(timeStep);
+                Levels[currentLevelNumber].handleHorizontalCollision(player);
+                player.move(timeStep);
+                player.adjustBoundingBox();
+                if (Levels[currentLevelNumber].reachedFakeExit(player)) {
+                    player.loseLife();
+                }
+                if (Levels[currentLevelNumber].reachedExit(player) || player.health === 0) {
+                    gameStarted = false;
+                    newLevelStarted = false;
+                    Levels = getLevels();
+                    if (Levels[currentLevelNumber].reachedExit(player))
+                        playerWon = true;
+                }
+                return lastPlayerState;
+            }
+        }
     }
-    size.innerHTML = `dx: ${player.dx.toFixed(1)} dy: ${player.dy.toFixed(1)}`;
+    else {
+        if (keyPressed[0 /* Enter */]) {
+            gameStarted = true;
+        }
+    }
+}
+function render(player) {
+    clr();
+    if (playerWon) {
+        winScreen.render();
+        setTimeout(() => {
+            playerWon = false;
+        }, 2000);
+    }
+    else if (gameStarted) {
+        Levels[currentLevelNumber].render(player);
+        player?.render();
+    }
+    else if (!gameStarted) {
+        startScreen.render();
+    }
 }
 const fps = 60;
 const timeStep = 1000 / fps;
@@ -53,7 +91,7 @@ function loop(timestamp) {
     }
     const alpha = timeAccumulator / timeStep;
     currentTimeState = currentTimeState * alpha + previousTimeState * (1.0 - alpha);
-    render();
+    render(lastPlayerState);
     requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);

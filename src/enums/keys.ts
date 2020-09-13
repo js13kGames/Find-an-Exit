@@ -1,4 +1,5 @@
 const enum Keys {
+    Enter,
     Jump,
     Crouch,
     Left,

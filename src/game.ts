@@ -1,49 +1,82 @@
 import {
-    canvas,
     clr,
-    ctx,
-    resize
 } from './common.js';
-import Player from './player.js';
-import { keyPressed } from './controller.js';
-import Keys from './keys.js';
 import { GRAVITY, TILE_SIZE } from './constants.js';
-import Render from './render.js';
-import levelOne from './levels/level_one.js';
+import { keyPressed } from './controller.js';
+import Keys from './enums/keys.js';
+import Player from './player.js';
+import StartScreen from './start_screen.js'
+import getLevels from './levels.js';
+import WinScreen from './win_screen.js';
+import levels from './levels.js';
 
-const playerStartingPoint: { x: number, y: number } = { x: levelOne.start[0] * TILE_SIZE, y: levelOne.start[1] * TILE_SIZE };
-let player = new Player(playerStartingPoint);
+let newLevelStarted = false;
+let gameStarted = false;
+let playerWon = false;
 
-let size = document.getElementById('size');
+let currentLevelNumber = 0;
+let player: Player | undefined;
+let Levels = getLevels();
+let startScreen = new StartScreen();
+let winScreen = new WinScreen();
 
 function update(timeStep: number = 1) {
-    let lastPlayerState = player;
+    if (gameStarted) {
+        if (!newLevelStarted) {
+            const playerStartingPoint: { x: number, y: number } = { x: Levels[currentLevelNumber].start[0] * TILE_SIZE, y: Levels[currentLevelNumber].start[1] * TILE_SIZE };
+            player = new Player(playerStartingPoint);
+            newLevelStarted = true;
+            return player;
+        } else {
+            if (player) {
+                let lastPlayerState = player;
 
-    // Add gravity to player
-    player.dy += GRAVITY;
-    levelOne.handleVerticalCollision(player);
-    player.jump(timeStep);
-    
-    levelOne.handleHorizontalCollision(player);
-    player.move(timeStep);
+                // Add gravity to player
+                player.dy += GRAVITY;
+                Levels[currentLevelNumber].handleVerticalCollision(player);
+                player.jump(timeStep);
 
-    player.adjustBoundingBox();
-    return lastPlayerState;
+                Levels[currentLevelNumber].handleHorizontalCollision(player);
+                player.move(timeStep);
+
+                player.adjustBoundingBox();
+
+                if (Levels[currentLevelNumber].reachedFakeExit(player)) {
+                    player.loseLife();
+                }
+
+                if (Levels[currentLevelNumber].reachedExit(player) || player.health === 0) {
+                    gameStarted = false;
+                    newLevelStarted = false;
+                    Levels = getLevels();
+                    if (Levels[currentLevelNumber].reachedExit(player)) playerWon = true;
+                }
+
+                return lastPlayerState;
+            }
+        }
+    } else {
+        if (keyPressed[Keys.Enter]) {
+            gameStarted = true;
+        }
+    }
 }
 
-function render(lastPlayerState: Player | undefined = undefined, interpolation: number = 1) {
+function render(player: Player | undefined) {
     clr();
-    // resize();
-    Render.renderLevelOne();
-    if (ctx !== null) {
-        ctx.fillStyle = 'black';
-        ctx.fillRect(lastPlayerState?.x || 0 + (player.x - (lastPlayerState?.x || 0)) * interpolation, lastPlayerState?.y || 0 + (player.y - (lastPlayerState?.y || 0)) * interpolation, player.height, player.height);
-
-        ctx.strokeStyle = '#FFA500';
-        ctx.strokeRect(player.boundingBox[0][0], player.boundingBox[0][1], player.height, player.height);
+    if (playerWon) {
+        winScreen.render();
+        setTimeout(() => {
+            playerWon = false;
+        }, 2000);
     }
 
-    size!.innerHTML = `dx: ${player.dx.toFixed(1)} dy: ${player.dy.toFixed(1)}`;
+    else if (gameStarted) {
+        Levels[currentLevelNumber].render(player!);
+        player?.render();
+    } else if (!gameStarted) {
+        startScreen.render();
+    }
 }
 
 const fps = 60;
@@ -76,7 +109,7 @@ function loop(timestamp: number) {
 
     currentTimeState = currentTimeState * alpha + previousTimeState * (1.0 - alpha);
 
-    render();
+    render(lastPlayerState);
     requestAnimationFrame(loop);
 }
 

@@ -1,4 +1,4 @@
-import Keys from './keys';
+import Keys from './enums/keys';
 
 onkeydown = (event: KeyboardEvent) => {
         let { code } = event;
@@ -29,6 +29,8 @@ export const keyMap = new Map([
 
     ['KeyS', Keys.Crouch],
     ['ArrowDown', Keys.Crouch],
+
+    ['Enter', Keys.Enter],
 ]);
 
 export const keyPressed: Array<boolean> = [];

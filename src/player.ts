@@ -1,7 +1,8 @@
 import { MAX_JUMP_VELOCITY, TILE_SIZE } from './constants.js';
-import Keys from './keys.js';
+import Keys from './enums/keys.js';
 import { keyPressed } from './controller.js';
-import BoundingBoxCorners from './bounding_box_corners.js';
+import BoundingBoxCorners from './enums/bounding_box_corners.js';
+import { ctx } from './common.js';
 
 class Player {
     #x: number;
@@ -9,7 +10,6 @@ class Player {
     dx: number = 0;
     dy: number = 0;
     #storedVelocity: number = 0;
-    #height: number = TILE_SIZE;
     #isJumped: boolean = false;
     isOnGround: boolean = true;
     #health: number = 3;
@@ -25,12 +25,8 @@ class Player {
     constructor(startingPoint: { x: number, y: number }) {
         let { x, y } = startingPoint;
         this.#x = x;
-        this.#y = y;
+        this.#y = y - 1;
         this.adjustBoundingBox();
-    }
-
-    get height() {
-        return this.#height;
     }
 
     get x() {
@@ -49,12 +45,27 @@ class Player {
         this.#x = x;
     }
 
+    get health() {
+        return this.#health;
+    }
+
     get isJumped() {
         return this.#isJumped;
     }
 
     get boundingBox() {
         return this.#boundingBox;
+    }
+
+    loseLife() {
+        this.#health--;
+    }
+
+    isDead() {
+        if (this.#health === 0) {
+            return true;
+        }
+        return false;
     }
 
     move(timeStep: number): void {
@@ -86,13 +97,29 @@ class Player {
 
     adjustBoundingBox() {
         this.#boundingBox[BoundingBoxCorners.upLeft] = [this.#x, this.#y];
-        this.#boundingBox[BoundingBoxCorners.upRight] = [this.#x + this.#height,this.#y];
-        this.#boundingBox[BoundingBoxCorners.downRight] = [this.#x + this.#height, this.#y + this.#height]
-        this.#boundingBox[BoundingBoxCorners.downLeft] = [this.#x, this.#y + this.#height];
+        this.#boundingBox[BoundingBoxCorners.upRight] = [this.#x + TILE_SIZE,this.#y];
+        this.#boundingBox[BoundingBoxCorners.downRight] = [this.#x + TILE_SIZE, this.#y + TILE_SIZE]
+        this.#boundingBox[BoundingBoxCorners.downLeft] = [this.#x, this.#y + TILE_SIZE];
     }
 
-    duck() {
-        //TODO: change sprite;
+    render() {
+        if (ctx !== null) {
+            ctx.strokeStyle = '#39658C';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(this.boundingBox[0][0], this.boundingBox[0][1], TILE_SIZE, TILE_SIZE);
+
+            ctx.fillStyle = '#39658C';
+            const facialFeatureSize = TILE_SIZE / 6;
+            if (this.dx >= 0) {
+                ctx.fillRect(this.boundingBox[0][0] + 2 * facialFeatureSize, this.boundingBox[0][1] + facialFeatureSize, facialFeatureSize, facialFeatureSize); // left eye
+                ctx.fillRect(this.boundingBox[0][0] + 4 * facialFeatureSize, this.boundingBox[0][1] + facialFeatureSize, facialFeatureSize, facialFeatureSize); // right eye
+                ctx.fillRect(this.boundingBox[0][0] + 2 * facialFeatureSize, this.boundingBox[0][1] + 3 * facialFeatureSize, 3 * facialFeatureSize, facialFeatureSize); // mouth
+            } else {
+                ctx.fillRect(this.boundingBox[0][0] + facialFeatureSize, this.boundingBox[0][1] + facialFeatureSize, facialFeatureSize, facialFeatureSize); // left eye
+                ctx.fillRect(this.boundingBox[0][0] + 3 * facialFeatureSize, this.boundingBox[0][1] + facialFeatureSize, facialFeatureSize, facialFeatureSize); // right eye
+                ctx.fillRect(this.boundingBox[0][0] + facialFeatureSize, this.boundingBox[0][1] + 3 * facialFeatureSize, 3 * facialFeatureSize, facialFeatureSize); // mouth
+            }
+        }
     }
 }
 

@@ -1,7 +1,7 @@
 {
-  "name": "js13kgame",
+  "name": "exitnotfound",
   "version": "1.0.0",
-  "description": "Game for js13k game jam",
+  "description": "Find the exit in the designated time period or else you lose a life",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

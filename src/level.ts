@@ -1,18 +1,33 @@
 import Player from './player.js';
 import { TILE_SIZE } from './constants.js';
-import TileType from './tile_type.js';
-import Point from './point.js';
-import BoundingBoxCorners from './bounding_box_corners.js';
+import BoundingBoxCorners from './enums/bounding_box_corners.js';
+import {
+    ctx,
+} from './common.js';
+import TileType from './enums/tile_type.js';
 
 class Level {
     #matrix: number[][];
-    #start: [number, number];
-    #end: [number, number];
+    #start: number[] = [];
+    #end: number[] = [];
+    #fakeEnd: number[][] = [];
 
-    constructor(matrix : number[][], start : [number, number], end : [number, number]) {
+    constructor(matrix: number[][]) {
         this.#matrix = matrix;
-        this.#start = start;
-        this.#end = end;
+        for (let row = 0; row < matrix.length; row++) {
+            for (let col = 0; col < matrix[0].length; col++) {
+                const tile = matrix[row][col];
+                if (tile === TileType.Start) {
+                    this.#start = [col, row];
+                }
+                if (tile === TileType.Exit) {
+                    this.#end = [col, row];
+                }
+                if (tile === TileType.FakeExit) {
+                    this.#fakeEnd.push([col, row]);
+                }
+            }
+        }
     }
 
     get start() {
@@ -27,7 +42,7 @@ class Level {
         return this.#matrix;
     }
 
-    handleVerticalCollision(player: Player) : void {
+    handleVerticalCollision(player: Player): void {
         const {
             boundingBox
         } = player;
@@ -44,23 +59,23 @@ class Level {
         }
     }
 
-    handleHorizontalCollision(player : Player) : void {
+    handleHorizontalCollision(player: Player): void {
         const {
             boundingBox
         } = player;
 
         const tilesEntered = this.getTilesEntered(player);
 
-        if (tilesEntered[BoundingBoxCorners.upLeft] === 1 && tilesEntered[BoundingBoxCorners.upRight] === 0) {
+        if (tilesEntered[BoundingBoxCorners.upLeft] === 1 && tilesEntered[BoundingBoxCorners.downLeft] === 1) {
             player.x = ~~(boundingBox[BoundingBoxCorners.upRight][0] / TILE_SIZE) * TILE_SIZE;
             player.dx = -player.dx;
-        } else if (tilesEntered[BoundingBoxCorners.upRight] === 1 && tilesEntered[BoundingBoxCorners.upLeft] === 0) {
+        } else if (tilesEntered[BoundingBoxCorners.upRight] === 1 && tilesEntered[BoundingBoxCorners.downRight] === 1) {
             player.x = ~~(boundingBox[BoundingBoxCorners.upLeft][0] / TILE_SIZE) * TILE_SIZE;
             player.dx = -player.dx;
         }
     }
 
-    getTilesEntered(player: Player) : number[] {
+    getTilesEntered(player: Player): number[] {
         const {
             boundingBox
         } = player;
@@ -75,6 +90,12 @@ class Level {
         const downRightTile = this.#matrix[~~(downRight[1] / TILE_SIZE)][~~(downRight[0] / TILE_SIZE)];
         const downLeftTile = this.#matrix[~~(downLeft[1] / TILE_SIZE)][~~(downLeft[0] / TILE_SIZE)];
 
+        if (downRightTile === TileType.FakeExit) {
+            this.#matrix[~~(downRight[1] / TILE_SIZE)][~~(downRight[0] / TILE_SIZE)] = TileType.Solid;
+        } else if (downLeftTile === TileType.FakeExit) {
+            this.#matrix[~~(downLeft[1] / TILE_SIZE)][~~(downLeft[0] / TILE_SIZE)] = TileType.Solid;
+        }
+
         const tilesBeingEntered = [];
         tilesBeingEntered[BoundingBoxCorners.upLeft] = upLeftTile;
         tilesBeingEntered[BoundingBoxCorners.upRight] = upRightTile;
@@ -82,6 +103,79 @@ class Level {
         tilesBeingEntered[BoundingBoxCorners.downLeft] = downLeftTile;
 
         return tilesBeingEntered;
+    }
+
+    reachedFakeExit(player: Player): boolean {
+        const tilesEntered = this.getTilesEntered(player);
+
+        if (tilesEntered[BoundingBoxCorners.downRight] === TileType.FakeExit || tilesEntered[BoundingBoxCorners.downLeft] === TileType.FakeExit) {
+            return true;
+        }
+        return false;
+    }
+
+    reachedExit(player: Player): boolean {
+        const tilesEntered = this.getTilesEntered(player);
+
+        if (tilesEntered[BoundingBoxCorners.downRight] === TileType.Exit || tilesEntered[BoundingBoxCorners.downLeft] === TileType.Exit) {
+            return true;
+        }
+        return false;
+    }
+
+    render(player: Player) {
+        this.renderMap();
+        this.renderExit();
+        this.renderHealth(player);
+    }
+
+    private renderMap() {
+        for (let row = 0; row < this.matrix.length; row++) {
+            for (let col = 0; col < this.matrix[0].length; col++) {
+                let val = this.matrix[row][col];
+                if (ctx !== null && !!val) {
+                    if (val === TileType.Solid) {
+                        ctx.fillStyle = '#424242';
+                        ctx.fillRect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                    } else if (val === TileType.Start) {
+                        ctx.fillStyle = '#008000';
+                        ctx.fillRect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE - 12);
+                        ctx.fillStyle = '#424242';
+                        ctx.fillRect(col * TILE_SIZE, row * TILE_SIZE + 8, TILE_SIZE, TILE_SIZE - 8);
+                    } else if (val === TileType.Exit || val === TileType.FakeExit) {
+                        ctx.fillStyle = '#FF0000';
+                        ctx.fillRect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE - 12);
+                        ctx.fillStyle = '#424242';
+                        ctx.fillRect(col * TILE_SIZE, row * TILE_SIZE + 8, TILE_SIZE, TILE_SIZE - 8);
+                    }
+                }
+            }
+        }
+    }
+
+    private renderExit() {
+        if (ctx !== null) {
+            ctx.strokeStyle = '#000000';
+            ctx.fillStyle = '#bc1a1a';
+            ctx.font = '12px monospace';
+            const text = 'EXIT';
+            const measurement = ctx?.measureText(text);
+            const exits = this.#fakeEnd.concat([this.#end]);
+            for (const [x, y] of exits) {
+                ctx?.fillText(text, x * TILE_SIZE + (TILE_SIZE - measurement!.width) / 2, y * TILE_SIZE - 5);
+            }
+        }
+    }
+
+    private renderHealth(player: Player) {
+        if (ctx !== null && player) {
+            const { health } = player;
+            ctx.fillText('Health: ', 1.5 * TILE_SIZE, 1.5 * TILE_SIZE);
+            for (let i = 0; i < health; i++) {
+                ctx.fillStyle = 'red';
+                ctx.fillText('♥', 1.5 * TILE_SIZE + ctx.measureText('Health: ').width + ctx.measureText('♥').width * i * 2, 1.5 * TILE_SIZE);
+            }
+        }
     }
 }
 
