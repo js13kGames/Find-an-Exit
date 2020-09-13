@@ -17,7 +17,7 @@ class StartScreen {
         centerText('press Enter to begin', this.#textY + 30);
 
         ctx!.font = '18px monospace';
-        centerText('Find the exit before time runs out', this.#textY + 80);
+        centerText('Find the exit before you run our of health', this.#textY + 80);
     }
 }
 
